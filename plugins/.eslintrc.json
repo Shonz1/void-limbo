@@ -1,0 +1,125 @@
+{
+  "root": false,
+  "overrides": [
+    {
+      "files": ["*.js"],
+      "extends": ["eslint:recommended", "plugin:prettier/recommended"],
+      "plugins": ["eslint-plugin-jsdoc", "eslint-plugin-prefer-arrow", "eslint-plugin-import"],
+      "parserOptions": {
+        "ecmaVersion": 2022,
+        "sourceType": "commonjs"
+      },
+      "env": {
+        "node": true
+      },
+      "globals": {
+        "BigInt": true,
+        "Map": true,
+        "Set": true,
+        "stream": true,
+        "connection": true,
+        "network": true,
+        "configs": true,
+        "eventManager": true,
+        "EventPriority": true
+      },
+      "rules": {
+        "arrow-body-style": "error",
+        "arrow-parens": ["off", "always"],
+        "brace-style": ["off", "off"],
+        "comma-dangle": "off",
+        "complexity": "off",
+        "constructor-super": "error",
+        "curly": "error",
+        "dot-notation": "error",
+        "eol-last": "error",
+        "eqeqeq": ["error", "smart"],
+        "guard-for-in": "error",
+        "id-denylist": "error",
+        "id-match": "error",
+        "import/no-deprecated": "warn",
+        "import/order": [
+          "error",
+          {
+            "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
+            "alphabetize": {
+              "order": "asc",
+              "caseInsensitive": true
+            },
+            "newlines-between": "always"
+          }
+        ],
+        "jsdoc/check-alignment": "error",
+        "jsdoc/check-indentation": "warn",
+        "jsdoc/no-types": "error",
+        "max-classes-per-file": "off",
+        "max-len": "off",
+        "new-parens": "error",
+        "no-bitwise": "off",
+        "no-caller": "error",
+        "no-cond-assign": "error",
+        "no-console": [
+          "error",
+          {
+            "allow": [
+              "log",
+              "warn",
+              "dir",
+              "timeLog",
+              "assert",
+              "clear",
+              "count",
+              "countReset",
+              "group",
+              "groupEnd",
+              "table",
+              "dirxml",
+              "error",
+              "groupCollapsed",
+              "Console",
+              "profile",
+              "profileEnd",
+              "timeStamp",
+              "context"
+            ]
+          }
+        ],
+        "no-debugger": "error",
+        "no-empty": "off",
+        "no-empty-function": "off",
+        "no-eval": "error",
+        "no-fallthrough": "error",
+        "no-invalid-this": "off",
+        "no-multiple-empty-lines": "off",
+        "no-new-wrappers": "error",
+        "no-restricted-imports": ["error", "rxjs/Rx"],
+        "no-throw-literal": "error",
+        "no-trailing-spaces": "error",
+        "no-undef-init": "error",
+        "no-unsafe-finally": "error",
+        "no-unused-expressions": "off",
+        "no-unused-labels": "error",
+        "no-use-before-define": "off",
+        "no-var": "error",
+        "object-shorthand": "error",
+        "one-var": ["error", "never"],
+        "prefer-arrow/prefer-arrow-functions": "off",
+        "prefer-const": "warn",
+        "quote-props": ["error", "as-needed"],
+        "radix": "error",
+        "semi": "error",
+        "space-before-function-paren": "off",
+        "spaced-comment": [
+          "error",
+          "always",
+          {
+            "markers": ["/"]
+          }
+        ],
+        "use-isnan": "error",
+        "valid-typeof": "off",
+        "unused-imports/no-unused-imports": "error"
+      }
+    }
+  ]
+}
