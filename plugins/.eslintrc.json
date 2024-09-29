@@ -17,11 +17,10 @@
         "Map": true,
         "Set": true,
         "stream": true,
-        "connection": true,
         "network": true,
         "configs": true,
-        "eventManager": true,
-        "EventPriority": true
+        "api": true,
+        "common": true
       },
       "rules": {
         "arrow-body-style": "error",

@@ -7,8 +7,9 @@
   "scripts": {
     "lint": "npx eslint .",
     "build": "npx tsc",
-    "dev": "npx ts-node-dev src/app.ts",
-    "map": "npx ts-node-dev src/map.ts"
+    "dev": "npx ts-node-dev --security-revert=CVE-2023-46809 src/app.ts",
+    "map": "npx ts-node-dev src/map.ts",
+    "start": "node --security-revert=CVE-2023-46809 dist/app.js"
   },
   "keywords": [],
   "author": "",

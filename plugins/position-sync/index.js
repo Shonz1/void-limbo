@@ -1,10 +1,10 @@
 /// <reference path="../global.d.ts" />
 
-eventManager
+api.eventManager
   .subscribe('player-position-update', async event => {
-    const { connection, position } = event;
+    const { player, position } = event;
 
-    const positionAndRotation = connection.getPositionAndRotation();
+    const positionAndRotation = player.getPositionAndRotation();
 
     let deltaX = 0;
     let deltaY = 0;
@@ -38,18 +38,20 @@ eventManager
     }
 
     if (('yaw' in position || 'pitch' in position) && (deltaX !== 0 || deltaY !== 0 || deltaZ !== 0)) {
-      for (const otherConnection of connection.constructor.getConnections()) {
-        if (otherConnection === connection) {
+      for (const otherPlayer of api.Player.getPlayers()) {
+        if (otherPlayer === player) {
           continue;
         }
 
-        if (otherConnection.getPhase() !== network.Phase.PLAY) {
+        const otherChannel = otherPlayer.getChannel();
+
+        if (otherChannel.getPhase() !== api.Phase.PLAY) {
           continue;
         }
 
-        await eventManager.fire('send-update-entity-position-and-rotation', {
-          connection: otherConnection,
-          entityId: connection.getId(),
+        await api.eventManager.fire('send-update-entity-position-and-rotation', {
+          channel: otherChannel,
+          entityId: player.getId(),
           deltaX,
           deltaY,
           deltaZ,
@@ -59,18 +61,20 @@ eventManager
         });
       }
     } else if (deltaX !== 0 || deltaY !== 0 || deltaZ !== 0) {
-      for (const otherConnection of connection.constructor.getConnections()) {
-        if (otherConnection === connection) {
+      for (const otherPlayer of api.Player.getPlayers()) {
+        if (otherPlayer === player) {
           continue;
         }
 
-        if (otherConnection.getPhase() !== network.Phase.PLAY) {
+        const otherChannel = otherPlayer.getChannel();
+
+        if (otherChannel.getPhase() !== api.Phase.PLAY) {
           continue;
         }
 
-        await eventManager.fire('send-update-entity-position', {
-          connection: otherConnection,
-          entityId: connection.getId(),
+        await api.eventManager.fire('send-update-entity-position', {
+          channel: otherChannel,
+          entityId: player.getId(),
           deltaX,
           deltaY,
           deltaZ,
@@ -78,18 +82,20 @@ eventManager
         });
       }
     } else if ('yaw' in position || 'pitch' in position) {
-      for (const otherConnection of connection.constructor.getConnections()) {
-        if (otherConnection === connection) {
+      for (const otherPlayer of api.Player.getPlayers()) {
+        if (otherPlayer === player) {
           continue;
         }
 
-        if (otherConnection.getPhase() !== network.Phase.PLAY) {
+        const otherChannel = otherPlayer.getChannel();
+
+        if (otherChannel.getPhase() !== api.Phase.PLAY) {
           continue;
         }
 
-        await eventManager.fire('send-update-entity-rotation', {
-          connection: otherConnection,
-          entityId: connection.getId(),
+        await api.eventManager.fire('send-update-entity-rotation', {
+          channel: otherChannel,
+          entityId: player.getId(),
           yaw: positionAndRotation.yaw,
           pitch: positionAndRotation.pitch,
           onGround: positionAndRotation.onGround,
@@ -98,21 +104,24 @@ eventManager
     }
   })
   .subscribe('connection-closed', async event => {
-    const { connection } = event;
+    const { channel } = event;
+    const player = channel.getAssociation();
 
-    for (const otherConnection of connection.constructor.getConnections()) {
-      if (otherConnection === connection) {
+    for (const otherPlayer of api.Player.getPlayers()) {
+      if (otherPlayer === player) {
         continue;
       }
 
-      if (otherConnection.getPhase() !== network.Phase.PLAY) {
+      const otherChannel = otherPlayer.getChannel();
+
+      if (otherChannel.getPhase() !== api.Phase.PLAY) {
         continue;
       }
 
-      await eventManager.fire('send-remove-entity', {
-        connection: otherConnection,
-        entityId: connection.getId(),
-        gameProfile: connection.getGameProfile(),
+      await api.eventManager.fire('send-remove-entity', {
+        channel: otherChannel,
+        entityId: player.getId(),
+        gameProfile: player.getGameProfile(),
       });
     }
   });

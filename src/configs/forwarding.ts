@@ -1,2 +1,2 @@
-export const FORWARDING_MODE = 'modern'; // 'online';
+export const FORWARDING_MODE = 'online';
 export const MODERN_FORWARDING_SECRET = 'aaaa';

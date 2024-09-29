@@ -1,102 +1,105 @@
 /// <reference path="../global.d.ts" />
 
 const { createHmac } = require('node:crypto');
-const { PassThrough } = require('node:stream');
 
 const { S2CLoginPluginRequestPacket, S2CLoginSuccessPacket, C2SLoginPluginResponsePacket, C2SLoginStartPacket } = require('./packets');
 
-eventManager
+api.eventManager
   .subscribe('phase-changed', async event => {
-    const { connection, phase } = event;
+    const { channel, phase } = event;
 
-    const protocolVersion = connection.getProtocolVersion();
-    if (protocolVersion.getVersion() < 393) {
+    const protocolVersion = channel.getProtocolVersion();
+    if (protocolVersion.compare(api.ProtocolVersion.MINECRAFT_1_13) < 0) {
       return;
     }
 
-    if (protocolVersion.getVersion() < 764) {
+    if (protocolVersion.compare(api.ProtocolVersion.MINECRAFT_1_20_2) < 0) {
       console.log('Not implemented yet');
     }
 
-    if (phase === network.Phase.CONFIGURATION) {
+    if (phase === api.Phase.CONFIGURATION) {
       return true;
     }
   })
   .subscribe(
     'packet-received',
     async event => {
-      const { connection, packetId } = event;
+      const { channel, packetId } = event;
 
       if (configs.FORWARDING_MODE !== 'modern') {
         return;
       }
 
-      const protocolVersion = connection.getProtocolVersion();
-      if (protocolVersion.getVersion() < 393) {
+      const protocolVersion = channel.getProtocolVersion();
+      if (protocolVersion.compare(api.ProtocolVersion.MINECRAFT_1_13) < 0) {
         return;
       }
 
-      const phase = connection.getPhase();
-      if (phase === network.Phase.LOGIN) {
+      const stream = event.getStream();
+
+      const phase = channel.getPhase();
+      if (phase === api.Phase.LOGIN) {
         if (packetId === 0x00) {
           const packet = new C2SLoginStartPacket();
-          await packet.decode(event.stream, event.size);
+          await packet.decode(stream, protocolVersion, event.size);
 
-          const gameProfile = new network.GameProfile({ uuid: packet.playerUuid, name: packet.playerName, properties: [] });
-          connection.setGameProfile(gameProfile);
+          const player = channel.getAssociation();
+
+          const gameProfile = new api.GameProfile({ uuid: packet.playerUuid, name: packet.playerName, properties: [] });
+          player.setGameProfile(gameProfile);
 
           const messageId = Math.ceil(Math.random() * 0xffff);
-          connection.modernForwardingMessageId = messageId;
-          await connection.send(new S2CLoginPluginRequestPacket({ messageId, channel: 'velocity:player_info', data: Buffer.alloc(0) }));
+          channel.modernForwardingMessageId = messageId;
+
+          const memoryStream = new common.SimpleMemoryStream();
+          new S2CLoginPluginRequestPacket({ messageId, channel: 'velocity:player_info', data: Buffer.alloc(0) }).encode(memoryStream);
+
+          await channel.writeMessage(new common.MinecraftBinaryPacket(S2CLoginPluginRequestPacket.id, memoryStream));
 
           return true;
         }
 
         if (packetId === 0x02) {
           const packet = new C2SLoginPluginResponsePacket();
-          await packet.decode(event.stream, event.size);
+          await packet.decode(stream, protocolVersion, event.size);
+
+          const player = channel.getAssociation();
 
           const { messageId, successful, data } = packet;
 
-          if (messageId === connection.modernForwardingMessageId) {
+          if (messageId === channel.modernForwardingMessageId) {
             if (successful) {
-              const memoryStream = new PassThrough();
-              memoryStream.end(data);
-              const stream = new network.MinecraftStream(memoryStream);
+              const memoryStream = new common.SimpleMemoryStream(data);
 
-              const signature = await stream.readAsync(32);
+              const signature = await memoryStream.read(32);
 
-              const forwardedData = await stream.readAsync(data.length - 32);
+              const forwardedData = await memoryStream.read(data.length - 32);
 
               const mySignature = createHmac('sha256', Buffer.from(configs.MODERN_FORWARDING_SECRET, 'utf8'))
                 .update(forwardedData)
                 .digest('hex');
 
               if (signature.toString('hex') === mySignature) {
-                const forwardedDataMemoryStream = new PassThrough();
-                forwardedDataMemoryStream.end(forwardedData);
-                const forwardedDataStream = new network.MinecraftStream(forwardedDataMemoryStream);
-
-                await forwardedDataStream.readVarIntAsync(); // Forwarding version
-                const remoteAddress = await forwardedDataStream.readStringAsync(); // IP address
-                const playerUuid = await forwardedDataStream.readAsync(16).then(b => b.toString('hex'));
-                const playerName = await forwardedDataStream.readStringAsync();
+                const forwardedDataMemoryStream = new common.SimpleMemoryStream(forwardedData);
+                await forwardedDataMemoryStream.readVarInt(); // Forwarding version
+                await forwardedDataMemoryStream.readString(); // Remote address
+                const playerUuid = await forwardedDataMemoryStream.read(16).then(b => b.toString('hex'));
+                const playerName = await forwardedDataMemoryStream.readString();
                 const properties = [];
 
-                const propertiesLength = await forwardedDataStream.readVarIntAsync();
+                const propertiesLength = await forwardedDataMemoryStream.readVarInt();
                 for (let i = 0; i < propertiesLength; i++) {
                   properties.push({
-                    name: await forwardedDataStream.readStringAsync(),
-                    value: await forwardedDataStream.readStringAsync(),
-                    signature: await forwardedDataStream
-                      .readBooleanAsync()
-                      .then(v => (v ? forwardedDataStream.readStringAsync() : undefined)),
+                    name: await forwardedDataMemoryStream.readString(),
+                    value: await forwardedDataMemoryStream.readString(),
+                    signature: await forwardedDataMemoryStream
+                      .readBoolean()
+                      .then(v => (v ? forwardedDataMemoryStream.readString() : undefined)),
                   });
                 }
 
-                connection.setRemoteAddress(remoteAddress);
-                connection.setGameProfile(
-                  new network.GameProfile({
+                player.setGameProfile(
+                  new api.GameProfile({
                     uuid: playerUuid,
                     name: playerName,
                     properties,
@@ -105,16 +108,21 @@ eventManager
               }
             }
 
-            const gameProfile = connection.getGameProfile();
+            const gameProfile = player.getGameProfile();
 
-            await connection.send(
-              new S2CLoginSuccessPacket({ playerUuid: gameProfile.uuid, playerName: gameProfile.name, properties: gameProfile.properties }),
-            );
+            const memoryStream = new common.SimpleMemoryStream();
+            new S2CLoginSuccessPacket({
+              playerUuid: gameProfile.uuid,
+              playerName: gameProfile.name,
+              properties: gameProfile.properties,
+            }).encode(memoryStream);
+
+            await channel.writeMessage(new common.MinecraftBinaryPacket(S2CLoginSuccessPacket.id, memoryStream));
 
             return true;
           }
         }
       }
     },
-    EventPriority.HIGHEST,
+    api.EventPriority.HIGHEST,
   );

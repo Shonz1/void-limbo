@@ -5,8 +5,8 @@ import { createWriteStream } from 'node:fs';
 import { join } from 'node:path';
 
 import { MapConverter } from './map-converter';
-import { MinecraftStream } from './network';
-import { WrapperStream } from './network/streams/wrapper.stream';
+import { MinecraftStream } from './map-converter/minecraft.stream';
+import { WrapperStream } from './map-converter/wrapper.stream';
 
 const generateChunkFile = async (regionX: number, regionZ: number) => {
   const mapConverter = await MapConverter.fromRegionFile(join(process.cwd(), `/data/map/Lobby/region/r.${regionX}.${regionZ}.mca`));

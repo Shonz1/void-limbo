@@ -1,11 +1,11 @@
 import { createWriteStream, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { MinecraftStream } from './map-converter/minecraft.stream';
+import { RegionFile } from './map-converter/types';
+import { WrapperStream } from './map-converter/wrapper.stream';
 import { Reader } from './nbt';
 import { Byte, Long } from './nbt/types';
-import { MinecraftStream } from './network';
-import { WrapperStream } from './network/streams/wrapper.stream';
-import { RegionFile } from './region';
 
 const BLOCKS_DATA = JSON.parse(readFileSync(join(process.cwd(), `/data/765/blocks.json`)).toString('utf8'));
 
@@ -72,7 +72,7 @@ const getBlockStateId = async (name: string, properties?: Record<string, unknown
 
 const generateChunkFile = async (regionX: number, regionZ: number, chunkX: number, chunkZ: number) => {
   const regionFile = new RegionFile(join(process.cwd(), `/data/map/Lobby/region/r.${regionX}.${regionZ}.mca`));
-  await regionFile.read();
+  await regionFile.load();
 
   const chunkStream = await regionFile.getChunkDataStream(chunkX, chunkZ);
   if (!chunkStream) {
