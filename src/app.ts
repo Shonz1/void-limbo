@@ -6,6 +6,7 @@ import * as api from './api';
 import * as common from './common';
 import * as configs from './configs';
 import * as nbt from './nbt';
+import * as utils from './utils';
 import { NODE_CONTEXT, createContext, readScript } from './utils/vm';
 
 (async () => {
@@ -30,7 +31,7 @@ import { NODE_CONTEXT, createContext, readScript } from './utils/vm';
     }
 
     await readScript(pluginEntrypointPath, {
-      context: createContext(Object.freeze({ ...NODE_CONTEXT, nbt, configs, api, common })),
+      context: createContext(Object.freeze({ ...NODE_CONTEXT, nbt, configs, api, common, utils })),
     });
   }
 

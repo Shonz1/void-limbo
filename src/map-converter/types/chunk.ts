@@ -1,6 +1,6 @@
 import { Long } from '../../nbt/types';
-import { MinecraftStream } from '../../network';
-import { WrapperStream } from '../../network/streams/wrapper.stream';
+import { MinecraftStream } from '../minecraft.stream';
+import { WrapperStream } from '../wrapper.stream';
 
 import { BitSet } from './bitset';
 import { BlockEntity } from './block-entity';

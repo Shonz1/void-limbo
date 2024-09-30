@@ -5,7 +5,7 @@ import { Chunk, RegionCompound, RegionFile } from './types';
 export class MapConverter {
   constructor(private chunks: Chunk[]) {}
 
-  static async fromRegionFile(path: string): Promise<MapConverter> {
+  static async fromRegionFile(path: string, protocolVersion: number): Promise<MapConverter> {
     const regionFile = new RegionFile(path);
     await regionFile.load();
 
@@ -25,7 +25,7 @@ export class MapConverter {
           `./versions/region/version-${chunkData.DataVersion}`
         );
 
-        result.push(await parse(chunkData, 765));
+        result.push(await parse(chunkData, protocolVersion));
       }
     }
 

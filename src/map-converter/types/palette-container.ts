@@ -1,4 +1,4 @@
-import { MinecraftStream } from '../../network';
+import { MinecraftStream } from '../minecraft.stream';
 
 import { BitSet } from './bitset';
 import { Palette } from './palettes';

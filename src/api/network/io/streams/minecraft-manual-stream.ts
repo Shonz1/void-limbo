@@ -67,12 +67,12 @@ export abstract class MinecraftManualStream implements MinecraftStream {
   }
 
   readCompound(): Promise<Record<string, unknown>> {
-    const reader = new Reader(this as any);
+    const reader = new Reader(this.baseStream as any);
     return reader.decodeAsync();
   }
 
   readNamedCompound(): Promise<Record<string, unknown>> {
-    const reader = new Reader(this as any);
+    const reader = new Reader(this.baseStream as any);
     return reader.decodeNamedAsync();
   }
 
@@ -143,12 +143,12 @@ export abstract class MinecraftManualStream implements MinecraftStream {
   }
 
   writeCompound(value: Record<string, unknown>) {
-    const writer = new Writer(this as any);
+    const writer = new Writer(this.baseStream as any);
     writer.encode(value);
   }
 
   writeNamedCompound(value: Record<string, unknown>) {
-    const writer = new Writer(this as any);
+    const writer = new Writer(this.baseStream as any);
     writer.encodeNamed(value);
   }
 

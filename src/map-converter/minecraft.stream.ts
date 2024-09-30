@@ -1,6 +1,6 @@
 import { Reader, Writer } from '../nbt';
 
-import { WrapperStream } from './streams/wrapper.stream';
+import { WrapperStream } from './wrapper.stream';
 
 export class MinecraftStream {
   public stream;

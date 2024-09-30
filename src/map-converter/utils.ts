@@ -25,6 +25,12 @@ const deepEqual = (obj1: any, obj2: any) => {
 
 export const getBlockStateId = (blocksData: Record<string, any>, name: string, properties?: Record<string, unknown>) => {
   const blockData = blocksData[name] ?? {};
+
+  if (!blockData.states) {
+    console.warn(`Block ${name} has no states`);
+    return 0;
+  }
+
   const state = blockData.states.find((i: any) => deepEqual(i.properties, properties));
   const defaultState = blockData.states.find((i: any) => i.default);
 

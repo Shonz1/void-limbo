@@ -10,7 +10,9 @@ type PacketOutType = new (...args: any[]) => MinecraftOutboundPacket;
 const PROTOCOL_MAPPING = new Map<ProtocolVersion, Map<Direction, Map<Phase, Map<number, PacketInType | PacketOutType>>>>();
 const PACKETS_TO_IGNORE = new Map<ProtocolVersion, Map<Phase, Set<number>>>();
 
-const getProtocolRegistry = (protocolVersion: ProtocolVersion): Map<Direction, Map<Phase, Map<number, PacketInType | PacketOutType>>> => {
+export const getProtocolRegistry = (
+  protocolVersion: ProtocolVersion,
+): Map<Direction, Map<Phase, Map<number, PacketInType | PacketOutType>>> => {
   if (!PROTOCOL_MAPPING.has(protocolVersion)) {
     PROTOCOL_MAPPING.set(
       protocolVersion,
@@ -73,6 +75,10 @@ export const registerOutPacket = (phase: Phase, protocolMappings: [ProtocolVersi
     const range = ProtocolVersion.range(from, to);
 
     for (const protocolVersion of range) {
+      if (protocolVersion !== from && protocolVersion === next[0]) {
+        continue;
+      }
+
       const protocolRegistry = getProtocolRegistry(protocolVersion);
       const inPackets = protocolRegistry.get(Direction.CLIENTBOUND);
       assert(inPackets);

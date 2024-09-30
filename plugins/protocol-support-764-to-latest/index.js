@@ -1,28 +1,6 @@
 const crypto = require('crypto');
-const { readFile } = require('fs/promises');
+const { readFile, readdir } = require('fs/promises');
 const { join } = require('path');
-
-const {
-  S2CJoinGamePacket,
-  S2CPlayerAbilitiesPacket,
-  S2CSyncPlayerPositionPacket,
-  S2CSetDefaultSpawnPositionPacket,
-  S2CPlayerInfoUpdatePacket,
-  S2CGameEventPacket,
-  S2CChunkDataAndLightUpdatePacket,
-  S2CKeepAlivePacket,
-  C2SSetPlayerOnGroundPacket,
-  C2SSetPlayerRotationPacket,
-  C2SSetPlayerPositionPacket,
-  C2SSetPlayerPositionAndRotationPacket,
-  S2CPlayerInfoRemovePacket,
-  S2CRemoveEntitiesPacket,
-  S2CUpdateEntityPositionPacket,
-  S2CUpdateEntityRotationPacket,
-  S2CSetHeadRotationPacket,
-  S2CUpdateEntityPositionAndRotationPacket,
-  S2CSpawnEntityPacket,
-} = require('../.protocol-765-support/packets');
 
 const { C2SFinishConfigurationPacket } = require('./packets/inbound/configuration/finish-configuration');
 const { C2SEncryptionResponsePacket } = require('./packets/inbound/login/encryption-response');
@@ -36,6 +14,14 @@ const { S2CDisconnectPacket } = require('./packets/outbound/login/disconnect');
 const { S2CEncryptionRequestPacket } = require('./packets/outbound/login/encryption-request');
 const { S2CLoginSuccessPacket } = require('./packets/outbound/login/login-success');
 const { S2CSetCompressionPacket } = require('./packets/outbound/login/set-compression');
+const { S2CChunkDataAndLightUpdatePacket } = require('./packets/outbound/play/chunk-data-and-light-update');
+const { S2CGameEventPacket } = require('./packets/outbound/play/game-event');
+const { S2CJoinGamePacket } = require('./packets/outbound/play/join-game');
+const { S2CKeepAlivePacket } = require('./packets/outbound/play/keep-alive');
+const { S2CPlayerAbilitiesPacket } = require('./packets/outbound/play/player-abilities');
+const { S2CPlayerInfoUpdatePacket } = require('./packets/outbound/play/player-info-update');
+const { S2CSetDefaultSpawnPositionPacket } = require('./packets/outbound/play/set-default-spawn-position');
+const { S2CSyncPlayerPositionPacket } = require('./packets/outbound/play/sync-player-position');
 const { S2CPingResponsePacket } = require('./packets/outbound/status/ping-response');
 const { S2CStatusResponsePacket } = require('./packets/outbound/status/status-response');
 
@@ -103,6 +89,7 @@ api.eventManager
           serverId: '',
           publicKey: configs.PUBLIC_KEY,
           verifyToken: crypto.randomBytes(4),
+          shouldAuthenticate: true,
         }),
       );
 
@@ -157,11 +144,16 @@ api.eventManager
     if (packet instanceof C2SLoginAcknowledgedPacket) {
       channel.setPhase(api.Phase.CONFIGURATION);
 
-      await channel.writeMessage(
-        new S2CRegistryDataPacket({
-          codec: await readFile(join(process.cwd(), 'data', channel.getProtocolVersion().getVersion().toString(), 'codec.dat')),
-        }),
-      );
+      {
+        // Send registries
+        const path = join(process.cwd(), 'data', 'registries', `${channel.getProtocolVersion().getVersion()}`);
+        const registryFiles = await readdir(path);
+
+        for (const registryFile of registryFiles) {
+          await channel.writeMessage(new S2CRegistryDataPacket({ codec: await readFile(join(path, registryFile)) }));
+        }
+      }
+
       await channel.writeMessage(new S2CFinishConfigurationPacket());
 
       return;
@@ -175,40 +167,43 @@ api.eventManager
       await api.eventManager.fire('player-join', { player });
     }
 
-    if (packet instanceof C2SSetPlayerPositionAndRotationPacket) {
-      await api.eventManager.fire('player-position-update', {
-        player,
-        position: { x: packet.x, y: packet.y, z: packet.z, yaw: packet.yaw, pitch: packet.pitch, onGround: packet.onGround },
-      });
-    }
+    // if (packet instanceof C2SSetPlayerPositionAndRotationPacket) {
+    //   await api.eventManager.fire('player-position-update', {
+    //     player,
+    //     position: { x: packet.x, y: packet.y, z: packet.z, yaw: packet.yaw, pitch: packet.pitch, onGround: packet.onGround },
+    //   });
+    // }
 
-    if (packet instanceof C2SSetPlayerPositionPacket) {
-      await api.eventManager.fire('player-position-update', {
-        player,
-        position: { x: packet.x, y: packet.y, z: packet.z, onGround: packet.onGround },
-      });
-    }
+    // if (packet instanceof C2SSetPlayerPositionPacket) {
+    //   await api.eventManager.fire('player-position-update', {
+    //     player,
+    //     position: { x: packet.x, y: packet.y, z: packet.z, onGround: packet.onGround },
+    //   });
+    // }
 
-    if (packet instanceof C2SSetPlayerRotationPacket) {
-      await api.eventManager.fire('player-position-update', {
-        player,
-        position: { yaw: packet.yaw, pitch: packet.pitch, onGround: packet.onGround },
-      });
-    }
+    // if (packet instanceof C2SSetPlayerRotationPacket) {
+    //   await api.eventManager.fire('player-position-update', {
+    //     player,
+    //     position: { yaw: packet.yaw, pitch: packet.pitch, onGround: packet.onGround },
+    //   });
+    // }
 
-    if (packet instanceof C2SSetPlayerOnGroundPacket) {
-      await api.eventManager.fire('player-position-update', {
-        player,
-        position: { onGround: packet.onGround },
-      });
-    }
+    // if (packet instanceof C2SSetPlayerOnGroundPacket) {
+    //   await api.eventManager.fire('player-position-update', {
+    //     player,
+    //     position: { onGround: packet.onGround },
+    //   });
+    // }
   })
   .subscribe('player-join', async event => {
     const { player } = event;
     const channel = player.getChannel();
     const gameProfile = player.getGameProfile();
+    const protocolVersion = channel.getProtocolVersion();
 
     console.log(`${gameProfile.name} joined the game`);
+
+    const dimensionType = protocolVersion.compare(api.ProtocolVersion.MINECRAFT_1_20_5) < 0 ? 'minecraft:overworld' : 0;
 
     await channel.writeMessage(
       new S2CJoinGamePacket({
@@ -221,7 +216,7 @@ api.eventManager
         reducedDebugInfo: false,
         enableRespawnScreen: true,
         doLimitedCrafting: false,
-        dimensionType: 'minecraft:overworld',
+        dimensionType,
         dimensionName: 'minecraft:overworld',
         hashedSeed: 0n,
         gameMode: 2,
@@ -229,6 +224,7 @@ api.eventManager
         isDebug: false,
         isFlat: false,
         portalCooldown: 0,
+        enforcedSecureChat: false,
       }),
     );
 
@@ -260,33 +256,33 @@ api.eventManager
       }),
     );
 
-    for (const otherPlayer of api.Player.getPlayers()) {
-      if (otherPlayer === player) {
-        continue;
-      }
+    // for (const otherPlayer of api.Player.getPlayers()) {
+    //   if (otherPlayer === player) {
+    //     continue;
+    //   }
 
-      const otherChannel = otherPlayer.getChannel();
+    //   const otherChannel = otherPlayer.getChannel();
 
-      if (otherChannel.getPhase() === api.Phase.PLAY) {
-        // Send current player to other players
-        await api.eventManager.fire('send-spawn-entity', {
-          channel: otherChannel,
-          entityId: player.getId(),
-          gameProfile: player.getGameProfile(),
-          type: 'minecraft:player',
-          position: positionAndRotation,
-        });
-      }
+    //   if (otherChannel.getPhase() === api.Phase.PLAY) {
+    //     // Send current player to other players
+    //     await api.eventManager.fire('send-spawn-entity', {
+    //       channel: otherChannel,
+    //       entityId: player.getId(),
+    //       gameProfile: player.getGameProfile(),
+    //       type: 'minecraft:player',
+    //       position: positionAndRotation,
+    //     });
+    //   }
 
-      // Send other players to current player
-      await api.eventManager.fire('send-spawn-entity', {
-        channel,
-        entityId: otherPlayer.getId(),
-        gameProfile: otherPlayer.getGameProfile(),
-        type: 'minecraft:player',
-        position: otherPlayer.getPositionAndRotation(),
-      });
-    }
+    //   // Send other players to current player
+    //   await api.eventManager.fire('send-spawn-entity', {
+    //     channel,
+    //     entityId: otherPlayer.getId(),
+    //     gameProfile: otherPlayer.getGameProfile(),
+    //     type: 'minecraft:player',
+    //     position: otherPlayer.getPositionAndRotation(),
+    //   });
+    // }
 
     await channel.writeMessage(
       new S2CSetDefaultSpawnPositionPacket({
@@ -339,97 +335,97 @@ api.eventManager
       clearInterval(keepAliveInterval);
       destroy.call(channel);
     };
-  })
-  .subscribe('send-spawn-entity', async event => {
-    const { channel, entityId, gameProfile, type, position } = event;
-
-    const registriesBin = await readFile(
-      join(process.cwd(), 'data', channel.getProtocolVersion().getVersion().toString(), 'registries.json'),
-    );
-    const registries = JSON.parse(registriesBin.toString('utf8'));
-    const entityTypes = registries['minecraft:entity_type'];
-    const currentEntityType = Object.entries(entityTypes.entries).find(([key]) => key === type);
-    const currentEntityTypeId = currentEntityType?.[1]?.protocol_id ?? 0;
-
-    await channel.writeMessage(
-      new S2CPlayerInfoUpdatePacket({
-        actions:
-          S2CPlayerInfoUpdatePacket.ACTIONS.ADD_PLAYER |
-          S2CPlayerInfoUpdatePacket.ACTIONS.UPDATE_GAMEMODE |
-          S2CPlayerInfoUpdatePacket.ACTIONS.UPDATE_LISTED,
-
-        players: [
-          {
-            uuid: gameProfile.uuid,
-            name: gameProfile.name,
-            properties: gameProfile.properties,
-            listed: true,
-            gamemode: 0,
-          },
-        ],
-      }),
-    );
-
-    await channel.writeMessage(
-      new S2CSpawnEntityPacket({
-        entityId,
-        entityUuid: gameProfile.uuid,
-        type: currentEntityTypeId,
-        x: position.x,
-        y: position.y,
-        z: position.z,
-        pitch: Math.round((position.pitch * 256) / 360) & 0xff,
-        yaw: Math.round((position.yaw * 256) / 360) & 0xff,
-        headYaw: Math.round((position.yaw * 256) / 360) & 0xff,
-        data: 0,
-        velocityX: 0,
-        velocityY: 0,
-        velocityZ: 0,
-      }),
-    );
-  })
-  .subscribe('send-remove-entity', async event => {
-    const { channel, entityId, gameProfile } = event;
-
-    if (gameProfile) {
-      await channel.writeMessage(new S2CPlayerInfoRemovePacket({ players: [gameProfile.uuid] }));
-    }
-
-    await channel.writeMessage(new S2CRemoveEntitiesPacket({ entities: [entityId] }));
-  })
-  .subscribe('send-update-entity-position', async event => {
-    const { channel, entityId, deltaX, deltaY, deltaZ, onGround } = event;
-
-    await channel.writeMessage(new S2CUpdateEntityPositionPacket({ entityId, deltaX, deltaY, deltaZ, onGround }));
-  })
-  .subscribe('send-update-entity-rotation', async event => {
-    const { channel, entityId, yaw, pitch, onGround } = event;
-
-    await channel.writeMessage(
-      new S2CUpdateEntityRotationPacket({
-        entityId,
-        yaw,
-        pitch,
-        onGround,
-      }),
-    );
-
-    await channel.writeMessage(new S2CSetHeadRotationPacket({ entityId, headYaw: yaw }));
-  })
-  .subscribe('send-update-entity-position-and-rotation', async event => {
-    const { channel, entityId, deltaX, deltaY, deltaZ, yaw, pitch, onGround } = event;
-
-    await channel.writeMessage(
-      new S2CUpdateEntityPositionAndRotationPacket({
-        entityId,
-        deltaX,
-        deltaY,
-        deltaZ,
-        yaw,
-        pitch,
-        onGround,
-      }),
-    );
-
-    await channel.writeMessage(new S2CSetHeadRotationPacket({ entityId, headYaw: yaw }));
   });
+// .subscribe('send-spawn-entity', async event => {
+//   const { channel, entityId, gameProfile, type, position } = event;
+
+//   const registriesBin = await readFile(
+//     join(process.cwd(), 'data', channel.getProtocolVersion().getVersion().toString(), 'registries.json'),
+//   );
+//   const registries = JSON.parse(registriesBin.toString('utf8'));
+//   const entityTypes = registries['minecraft:entity_type'];
+//   const currentEntityType = Object.entries(entityTypes.entries).find(([key]) => key === type);
+//   const currentEntityTypeId = currentEntityType?.[1]?.protocol_id ?? 0;
+
+//   await channel.writeMessage(
+//     new S2CPlayerInfoUpdatePacket({
+//       actions:
+//         S2CPlayerInfoUpdatePacket.ACTIONS.ADD_PLAYER |
+//         S2CPlayerInfoUpdatePacket.ACTIONS.UPDATE_GAMEMODE |
+//         S2CPlayerInfoUpdatePacket.ACTIONS.UPDATE_LISTED,
+
+//       players: [
+//         {
+//           uuid: gameProfile.uuid,
+//           name: gameProfile.name,
+//           properties: gameProfile.properties,
+//           listed: true,
+//           gamemode: 0,
+//         },
+//       ],
+//     }),
+//   );
+
+//   await channel.writeMessage(
+//     new S2CSpawnEntityPacket({
+//       entityId,
+//       entityUuid: gameProfile.uuid,
+//       type: currentEntityTypeId,
+//       x: position.x,
+//       y: position.y,
+//       z: position.z,
+//       pitch: Math.round((position.pitch * 256) / 360) & 0xff,
+//       yaw: Math.round((position.yaw * 256) / 360) & 0xff,
+//       headYaw: Math.round((position.yaw * 256) / 360) & 0xff,
+//       data: 0,
+//       velocityX: 0,
+//       velocityY: 0,
+//       velocityZ: 0,
+//     }),
+//   );
+// });
+// .subscribe('send-remove-entity', async event => {
+//   const { channel, entityId, gameProfile } = event;
+
+//   if (gameProfile) {
+//     await channel.writeMessage(new S2CPlayerInfoRemovePacket({ players: [gameProfile.uuid] }));
+//   }
+
+//   await channel.writeMessage(new S2CRemoveEntitiesPacket({ entities: [entityId] }));
+// })
+// .subscribe('send-update-entity-position', async event => {
+//   const { channel, entityId, deltaX, deltaY, deltaZ, onGround } = event;
+
+//   await channel.writeMessage(new S2CUpdateEntityPositionPacket({ entityId, deltaX, deltaY, deltaZ, onGround }));
+// })
+// .subscribe('send-update-entity-rotation', async event => {
+//   const { channel, entityId, yaw, pitch, onGround } = event;
+
+//   await channel.writeMessage(
+//     new S2CUpdateEntityRotationPacket({
+//       entityId,
+//       yaw,
+//       pitch,
+//       onGround,
+//     }),
+//   );
+
+//   await channel.writeMessage(new S2CSetHeadRotationPacket({ entityId, headYaw: yaw }));
+// })
+// .subscribe('send-update-entity-position-and-rotation', async event => {
+//   const { channel, entityId, deltaX, deltaY, deltaZ, yaw, pitch, onGround } = event;
+
+//   await channel.writeMessage(
+//     new S2CUpdateEntityPositionAndRotationPacket({
+//       entityId,
+//       deltaX,
+//       deltaY,
+//       deltaZ,
+//       yaw,
+//       pitch,
+//       onGround,
+//     }),
+//   );
+
+//   await channel.writeMessage(new S2CSetHeadRotationPacket({ entityId, headYaw: yaw }));
+// });

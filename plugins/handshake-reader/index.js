@@ -17,7 +17,13 @@ api.eventManager.subscribe(
     await stream.readShort(); // remotePort
     const nextState = await stream.readVarInt();
 
-    channel.setProtocolVersion(api.ProtocolVersion.get(protocolVersion));
+    const protocol = api.ProtocolVersion.get(protocolVersion);
+    if (!protocol) {
+      stream.destroy();
+      return;
+    }
+
+    channel.setProtocolVersion(protocol);
     channel.setPhase(nextState);
 
     await api.eventManager.fire('handshake-completed', { channel });

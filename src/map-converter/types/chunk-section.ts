@@ -1,4 +1,4 @@
-import { MinecraftStream } from '../../network';
+import { MinecraftStream } from '../minecraft.stream';
 
 import { PaletteContainer } from './palette-container';
 

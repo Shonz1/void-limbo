@@ -150,7 +150,7 @@ export class MinecraftPacketMessageStream implements MinecraftStream {
         packet.constructor as new () => MinecraftOutboundPacket,
       );
       if (packetId === undefined || packetId === null) {
-        throw new Error(`Unknown packet: ${packet.constructor.name}`);
+        throw new Error(`Unknown packet: ${packet.constructor.name} | Phase: ${Phase[this.channel.getPhase()]}`);
       }
 
       await memoryStream.writeVarInt(packetId);
@@ -189,7 +189,7 @@ export class MinecraftPacketMessageStream implements MinecraftStream {
         packet.constructor as new () => MinecraftOutboundPacket,
       );
       if (packetId === undefined || packetId === null) {
-        throw new Error(`Unknown packet: ${packet.constructor.name}`);
+        throw new Error(`Unknown packet: ${packet.constructor.name} | Phase: ${Phase[this.channel.getPhase()]}`);
       }
 
       await memoryStream.writeVarInt(packetId);

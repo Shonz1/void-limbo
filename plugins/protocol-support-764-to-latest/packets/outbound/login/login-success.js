@@ -9,7 +9,7 @@ class S2CLoginSuccessPacket {
     this.properties = properties;
   }
 
-  async encode(stream) {
+  async encode(stream, protocolVersion) {
     stream.writeUuid(this.playerUuid);
     stream.writeString(this.playerName);
     stream.writeVarInt(this.properties.length);
@@ -21,6 +21,10 @@ class S2CLoginSuccessPacket {
       if (property.signature) {
         stream.writeString(property.signature);
       }
+    }
+
+    if (protocolVersion.compare(api.ProtocolVersion.MINECRAFT_1_20_5) >= 0) {
+      stream.writeBoolean(false);
     }
   }
 }

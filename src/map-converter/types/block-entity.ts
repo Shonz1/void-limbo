@@ -1,4 +1,4 @@
-import { MinecraftStream } from '../../network';
+import { MinecraftStream } from '../minecraft.stream';
 
 export class BlockEntity {
   constructor(
