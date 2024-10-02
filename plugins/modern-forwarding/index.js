@@ -2,7 +2,8 @@
 
 const { createHmac } = require('crypto');
 
-const { S2CLoginPluginRequestPacket, C2SLoginPluginResponsePacket } = require('./packets');
+const { C2SLoginPluginResponsePacket } = require('./packets/c2s-login-plugin-response.packet');
+const { S2CLoginPluginRequestPacket } = require('./packets/s2c-login-plugin-request.packet');
 
 api.eventManager.subscribe(
   'pre-login-complete',
