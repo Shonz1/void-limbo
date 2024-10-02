@@ -95,14 +95,12 @@ class LoginService {
         signature: loginStartPacket.signature,
       };
     }
-
-    player.verifyToken = crypto.randomBytes(4);
   }
 
   async enableEncryption(channel, protocolVersion) {
     const player = channel.getAssociation();
 
-    const verifyToken = player.verifyToken;
+    const verifyToken = crypto.randomBytes(4);
 
     await channel.writeMessage(
       new S2CEncryptionRequestPacket({
