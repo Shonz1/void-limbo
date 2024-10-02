@@ -1,5 +1,5 @@
-import { createWriteStream, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { createWriteStream, readFileSync } from 'fs';
+import { join } from 'path';
 
 import { MinecraftStream } from './map-converter/minecraft.stream';
 import { RegionFile } from './map-converter/types';

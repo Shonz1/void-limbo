@@ -1,6 +1,6 @@
-import { FileHandle, open } from 'node:fs/promises';
-import { PassThrough, Readable } from 'node:stream';
-import { unzipSync } from 'node:zlib';
+import { FileHandle, open } from 'fs/promises';
+import { PassThrough, Readable } from 'stream';
+import { unzipSync } from 'zlib';
 
 export class RegionFile {
   static readonly SECTOR_BYTES = 4096;

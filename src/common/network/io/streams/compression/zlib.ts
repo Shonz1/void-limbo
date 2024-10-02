@@ -22,7 +22,7 @@ export class ZlibCompressionStream extends MinecraftManualStream {
     throw new Error('Unknown stream type');
   }
 
-  async write(chunk: Buffer) {
+  write(chunk: Buffer) {
     if (this.baseStream instanceof MinecraftManualStream) {
       return this.writeManual(this.baseStream, chunk);
     }
@@ -54,7 +54,7 @@ export class ZlibCompressionStream extends MinecraftManualStream {
     return uncompressed as Buffer;
   }
 
-  private async writeManual(stream: MinecraftManualStream, chunk: Buffer) {
+  private writeManual(stream: MinecraftManualStream, chunk: Buffer) {
     const dataLength = chunk.length < this.compressionThreshold ? 0 : chunk.length;
 
     if (dataLength > 0) {

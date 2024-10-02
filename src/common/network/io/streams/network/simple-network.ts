@@ -1,4 +1,4 @@
-import { Duplex } from 'node:stream';
+import { Duplex } from 'stream';
 
 import { MinecraftManualStream } from '../../../../../api';
 
@@ -25,7 +25,7 @@ export class SimpleNetworkStream extends MinecraftManualStream {
     return this.baseStream?.read(size) ?? Buffer.alloc(0);
   }
 
-  async write(data: Buffer): Promise<void> {
+  write(data: Buffer): void {
     this.baseStream?.write(data);
   }
 

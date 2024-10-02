@@ -1,9 +1,9 @@
-import { PassThrough } from 'node:stream';
+import { PassThrough } from 'stream';
 
 import { MinecraftManualStream } from '../../../../../api';
 
 export class SimpleMemoryStream extends MinecraftManualStream {
-  baseStream = new PassThrough();
+  baseStream = new PassThrough({ highWaterMark: Number.MAX_SAFE_INTEGER });
 
   constructor(buffer?: Buffer) {
     super();
@@ -23,8 +23,10 @@ export class SimpleMemoryStream extends MinecraftManualStream {
     return this.baseStream?.read(size) ?? Buffer.alloc(0);
   }
 
-  async write(data: Buffer): Promise<void> {
-    this.baseStream?.write(data);
+  write(data: Buffer): void {
+    if (!this.baseStream?.write(data)) {
+      throw new Error(`Cannot write data to stream`);
+    }
   }
 
   destroy(): void {

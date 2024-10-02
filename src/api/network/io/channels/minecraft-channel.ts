@@ -8,6 +8,12 @@ export interface MinecraftChannel {
   readonly head: MinecraftStreamBase;
   readonly closed: boolean;
 
+  getRemoteAddress(): string;
+  setRemoteAddress(value: string): void;
+
+  getRemotePort(): number;
+  setRemotePort(value: number): void;
+
   getProtocolVersion(): ProtocolVersion;
   setProtocolVersion(value: ProtocolVersion): void;
 

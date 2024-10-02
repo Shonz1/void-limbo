@@ -1,3 +1,4 @@
+import { ProtocolVersion } from '../../api';
 import { Long } from '../../nbt/types';
 import { MinecraftStream } from '../minecraft.stream';
 import { WrapperStream } from '../wrapper.stream';
@@ -21,42 +22,69 @@ export class Chunk {
     private blockLight: Buffer[],
   ) {}
 
-  async encode(stream: MinecraftStream) {
-    stream.writeInt(this.x);
-    stream.writeInt(this.z);
+  async encode(stream: MinecraftStream, protocolVersion: ProtocolVersion) {
+    if (protocolVersion.compare(ProtocolVersion.MINECRAFT_1_13) === 0) {
+      stream.writeInt(this.x);
+      stream.writeInt(this.z);
+      stream.writeBoolean(true);
+      stream.writeVarInt(Number(this.blockLightMask.getValues()[0]));
 
-    stream.writeCompound(this.heightmaps);
+      const dataBuf: number[] = [];
+      const dataStream = new MinecraftStream(new WrapperStream({ write: (chunk: Buffer) => dataBuf.push(...chunk) } as any));
 
-    const dataBuf: number[] = [];
-    const dataStream = new MinecraftStream(new WrapperStream({ write: (chunk: Buffer) => dataBuf.push(...chunk) } as any));
+      for (const section of this.sections) {
+        await section.encode(dataStream);
+      }
 
-    for (const section of this.sections) {
-      await section.encode(dataStream);
-    }
+      stream.writeVarInt(dataBuf.length);
+      stream.write(Buffer.from(dataBuf));
 
-    stream.writeVarInt(dataBuf.length);
-    stream.write(Buffer.from(dataBuf));
+      stream.writeVarInt(this.blockEntities.length);
+      for (const blockEntity of this.blockEntities) {
+        stream.writeCompound({
+          x: blockEntity.getX(),
+          y: blockEntity.getY(),
+          z: blockEntity.getZ(),
+          ...blockEntity.getNbt(),
+        });
+      }
+    } else {
+      stream.writeInt(this.x);
+      stream.writeInt(this.z);
 
-    stream.writeVarInt(this.blockEntities.length);
-    for (const blockEntity of this.blockEntities) {
-      await blockEntity.encode(stream);
-    }
+      stream.writeCompound(this.heightmaps);
 
-    await this.skyLightMask.toStream(stream);
-    await this.blockLightMask.toStream(stream);
-    await this.emptySkyLightMask.toStream(stream);
-    await this.emptyBlockLightMask.toStream(stream);
+      const dataBuf: number[] = [];
+      const dataStream = new MinecraftStream(new WrapperStream({ write: (chunk: Buffer) => dataBuf.push(...chunk) } as any));
 
-    stream.writeVarInt(this.skyLight.length);
-    for (const light of this.skyLight) {
-      stream.writeVarInt(light.length);
-      stream.write(light);
-    }
+      for (const section of this.sections) {
+        await section.encode(dataStream);
+      }
 
-    stream.writeVarInt(this.blockLight.length);
-    for (const light of this.blockLight) {
-      stream.writeVarInt(light.length);
-      stream.write(light);
+      stream.writeVarInt(dataBuf.length);
+      stream.write(Buffer.from(dataBuf));
+
+      stream.writeVarInt(this.blockEntities.length);
+      for (const blockEntity of this.blockEntities) {
+        await blockEntity.encode(stream);
+      }
+
+      await this.skyLightMask.toStream(stream);
+      await this.blockLightMask.toStream(stream);
+      await this.emptySkyLightMask.toStream(stream);
+      await this.emptyBlockLightMask.toStream(stream);
+
+      stream.writeVarInt(this.skyLight.length);
+      for (const light of this.skyLight) {
+        stream.writeVarInt(light.length);
+        stream.write(light);
+      }
+
+      stream.writeVarInt(this.blockLight.length);
+      for (const light of this.blockLight) {
+        stream.writeVarInt(light.length);
+        stream.write(light);
+      }
     }
   }
 }

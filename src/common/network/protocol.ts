@@ -1,4 +1,4 @@
-import assert from 'node:assert';
+import assert from 'assert';
 
 import { Direction, Phase, ProtocolVersion } from '../../api';
 
@@ -29,13 +29,13 @@ export const getProtocolRegistry = (
   return result;
 };
 
-export const registerInPacket = (phase: Phase, protocolMappings: [ProtocolVersion, number][], packet: PacketInType) => {
+export const registerInPacket = (phase: Phase, protocolMappings: [ProtocolVersion, number, ProtocolVersion?][], packet: PacketInType) => {
   for (let i = 0; i < protocolMappings.length; i++) {
     const current = protocolMappings[i];
     const next = i + 1 < protocolMappings.length ? protocolMappings[i + 1] : current;
 
-    const [from, id] = current;
-    const to = current[0].compare(next[0]) === 0 ? ProtocolVersion.LATEST : next[0];
+    const [from, id, lastSupported] = current;
+    const to = from.compare(next[0]) === 0 ? lastSupported ?? ProtocolVersion.LATEST : next[0];
 
     if (from.compare(to) > 0) {
       throw new Error(`Next mapping version (${to.getVersion()}) should be lower than the current (${from.getVersion()})`);

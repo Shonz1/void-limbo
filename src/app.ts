@@ -1,6 +1,6 @@
-import fsp from 'node:fs/promises';
-import net from 'node:net';
-import { join } from 'node:path';
+import fsp from 'fs/promises';
+import net from 'net';
+import { join } from 'path';
 
 import * as api from './api';
 import * as common from './common';

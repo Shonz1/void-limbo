@@ -13,8 +13,8 @@ api.eventManager.subscribe(
 
     await stream.readVarInt(); // Packet id
     const protocolVersion = await stream.readVarInt();
-    await stream.readString(); // remoteAddress
-    await stream.readShort(); // remotePort
+    const remoteAddress = await stream.readString();
+    const remotePort = await stream.readShort();
     const nextState = await stream.readVarInt();
 
     const protocol = api.ProtocolVersion.get(protocolVersion);
@@ -23,6 +23,10 @@ api.eventManager.subscribe(
       return;
     }
 
+    channel.add(new common.MinecraftPacketMessageStream(channel));
+
+    channel.setRemoteAddress(remoteAddress);
+    channel.setRemotePort(remotePort);
     channel.setProtocolVersion(protocol);
     channel.setPhase(nextState);
 

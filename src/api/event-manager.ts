@@ -29,7 +29,7 @@ export class EventManager {
     return this;
   }
 
-  async fire(event: string, data: Record<string, unknown>) {
+  async fire(event: string, data: Record<string, unknown>): Promise<boolean> {
     const priorities = this._handlers.get(event);
     if (priorities) {
       for (const [, handlers] of [...priorities.entries()].sort((a, b) => b[0] - a[0])) {
@@ -37,13 +37,13 @@ export class EventManager {
           const cancelled = await handler(data).catch(err => console.error(err));
 
           if (cancelled) {
-            return this;
+            return true;
           }
         }
       }
     }
 
-    return this;
+    return false;
   }
 }
 

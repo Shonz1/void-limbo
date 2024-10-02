@@ -6,5 +6,6 @@ export interface MinecraftOutboundPacket extends MinecraftMessage {
 }
 
 export interface MinecraftInboundPacket {
+  __size: number;
   decode(stream: MinecraftStream, protocolVersion: ProtocolVersion, size: number): Promise<void>;
 }

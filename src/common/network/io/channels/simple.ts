@@ -1,4 +1,13 @@
-import { MinecraftChannel, MinecraftMessage, MinecraftStream, MinecraftStreamBase, Phase, Player, ProtocolVersion } from '../../../../api';
+import {
+  eventManager,
+  MinecraftChannel,
+  MinecraftMessage,
+  MinecraftStream,
+  MinecraftStreamBase,
+  Phase,
+  Player,
+  ProtocolVersion,
+} from '../../../../api';
 import { MinecraftOutboundPacket } from '../messages';
 import { MinecraftPacketMessageStream } from '../streams';
 
@@ -6,6 +15,8 @@ export class SimpleChannel implements MinecraftChannel {
   head: MinecraftStream;
 
   private association: Player | null = null;
+  private remoteAddress = '';
+  private remotePort = 0;
   private protocolVersion = ProtocolVersion.OLDEST;
   private phase = Phase.HANDSHAKE;
 
@@ -25,6 +36,22 @@ export class SimpleChannel implements MinecraftChannel {
     this.association = value;
   }
 
+  getRemoteAddress(): string {
+    return this.remoteAddress;
+  }
+
+  setRemoteAddress(value: string): void {
+    this.remoteAddress = value;
+  }
+
+  getRemotePort(): number {
+    return this.remotePort;
+  }
+
+  setRemotePort(value: number): void {
+    this.remotePort = value;
+  }
+
   getProtocolVersion(): ProtocolVersion {
     return this.protocolVersion;
   }
@@ -39,6 +66,7 @@ export class SimpleChannel implements MinecraftChannel {
 
   setPhase(value: Phase): void {
     this.phase = value;
+    eventManager.fire('phase-changed', { channel: this, phase: value });
   }
 
   add(stream: MinecraftStream): void {
@@ -75,7 +103,7 @@ export class SimpleChannel implements MinecraftChannel {
       return this.head.readPacket();
     }
 
-    throw new Error('Unknown stream type');
+    throw new Error(`Unknown stream type "${this.head.constructor.name}"`);
   }
 
   writeMessage(message: MinecraftMessage): Promise<void> {
@@ -83,7 +111,7 @@ export class SimpleChannel implements MinecraftChannel {
       return this.head.writePacket(message as MinecraftOutboundPacket);
     }
 
-    throw new Error('Unknown stream type');
+    throw new Error(`Unknown stream type "${this.head.constructor.name}"`);
   }
 
   destroy(): void {

@@ -21,7 +21,7 @@ export class AesCfb8EncryptionStream extends MinecraftManualStream {
     return buf ? this.decrypt(buf) : Buffer.alloc(0);
   }
 
-  async write(chunk: Buffer) {
+  write(chunk: Buffer) {
     return this.baseStream?.write(this.encrypt(chunk));
   }
 

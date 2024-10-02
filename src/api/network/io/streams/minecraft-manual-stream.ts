@@ -66,6 +66,10 @@ export abstract class MinecraftManualStream implements MinecraftStream {
     return this.read(length).then(buffer => buffer.toString('utf-8'));
   }
 
+  readUuid(): void {
+    this.read(16).then(buffer => buffer.toString('hex'));
+  }
+
   readCompound(): Promise<Record<string, unknown>> {
     const reader = new Reader(this.baseStream as any);
     return reader.decodeAsync();
@@ -135,7 +139,7 @@ export abstract class MinecraftManualStream implements MinecraftStream {
   }
 
   writeUuid(value: string): void {
-    this.write(Buffer.from(value, 'hex'));
+    this.write(Buffer.from(value.replace(/-/g, ''), 'hex'));
   }
 
   writeTextComponent(value: Record<string, unknown>) {
@@ -153,5 +157,5 @@ export abstract class MinecraftManualStream implements MinecraftStream {
   }
 
   abstract read(size: number): Promise<Buffer>;
-  abstract write(data: Buffer): Promise<void>;
+  abstract write(data: Buffer): void;
 }

@@ -1,3 +1,4 @@
+import { ProtocolVersion } from '../api';
 import { Reader } from '../nbt';
 
 import { Chunk, RegionCompound, RegionFile } from './types';
@@ -5,7 +6,7 @@ import { Chunk, RegionCompound, RegionFile } from './types';
 export class MapConverter {
   constructor(private chunks: Chunk[]) {}
 
-  static async fromRegionFile(path: string, protocolVersion: number): Promise<MapConverter> {
+  static async fromRegionFile(path: string, protocolVersion: ProtocolVersion): Promise<MapConverter> {
     const regionFile = new RegionFile(path);
     await regionFile.load();
 
@@ -21,7 +22,7 @@ export class MapConverter {
         const reader = new Reader(dataStream);
         const chunkData = (await reader.decodeNamedAsync()) as RegionCompound;
 
-        const { parse }: { parse: (chunkData: RegionCompound, protocolVersion: number) => Chunk } = await import(
+        const { parse }: { parse: (chunkData: RegionCompound, protocolVersion: ProtocolVersion) => Chunk } = await import(
           `./versions/region/version-${chunkData.DataVersion}`
         );
 

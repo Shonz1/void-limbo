@@ -1,1 +1,1 @@
-export const COMPRESSION_THRESHOLD = 0;
+export const COMPRESSION_THRESHOLD = 256;

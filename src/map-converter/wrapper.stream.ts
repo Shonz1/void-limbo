@@ -1,4 +1,4 @@
-import { Duplex } from 'node:stream';
+import { Duplex } from 'stream';
 
 export class WrapperStream {
   constructor(public stream: Duplex | WrapperStream) {}

@@ -77,6 +77,7 @@ export class MinecraftPacketMessageStream implements MinecraftStream {
     }
 
     const packet = new packetType();
+    packet.__size = dataSize;
 
     await packet.decode(memoryStream, this.channel.getProtocolVersion(), dataSize);
 
@@ -117,6 +118,7 @@ export class MinecraftPacketMessageStream implements MinecraftStream {
     }
 
     const packet = new packetType();
+    packet.__size = dataSize;
 
     await packet.decode(memoryStream, this.channel.getProtocolVersion(), dataSize);
 
@@ -165,7 +167,7 @@ export class MinecraftPacketMessageStream implements MinecraftStream {
     const size = memoryStream.baseStream?.readableLength ?? 0;
 
     stream.writeVarInt(size);
-    await stream.write(await memoryStream.read(size));
+    stream.write(await memoryStream.read(size));
 
     console.log(`[OUT] 0x${packetId.toString(16).padStart(2, '0')} in phase ${Phase[this.channel.getPhase()]}`);
 
@@ -204,7 +206,7 @@ export class MinecraftPacketMessageStream implements MinecraftStream {
     const size = memoryStream.baseStream?.readableLength ?? 0;
     await stream.write(await memoryStream.read(size));
 
-    console.log(`[OUT] 0x${packetId.toString(16).padStart(2, '0')} in phase ${Phase[this.channel.getPhase()]}`);
+    console.log(`[OUT] 0x${packetId.toString(16).padStart(2, '0')} in phase ${Phase[this.channel.getPhase()]} (${size} bytes)`);
 
     memoryStream.destroy();
   }

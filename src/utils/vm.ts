@@ -1,9 +1,9 @@
 'use strict';
 
-import fs from 'node:fs';
-import fsp from 'node:fs/promises';
-import path from 'node:path';
-import vm from 'node:vm';
+import fs from 'fs';
+import fsp from 'fs/promises';
+import path from 'path';
+import vm from 'vm';
 
 const RUN_OPTIONS = { timeout: 1000 };
 

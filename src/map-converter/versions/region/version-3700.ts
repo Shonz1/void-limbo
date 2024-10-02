@@ -1,5 +1,6 @@
-import { join } from 'node:path';
+import { join } from 'path';
 
+import { ProtocolVersion } from '../../../api';
 import { Byte, Long } from '../../../nbt/types';
 import {
   BitSet,
@@ -37,8 +38,8 @@ interface ChunkData extends RegionCompound {
   sections: SectionData[];
 }
 
-export const parse = (chunkData: ChunkData, protocolVersion: number): Chunk => {
-  const minecraftBlocksData = require(join(process.cwd(), 'data', protocolVersion.toString(), 'blocks.json'));
+export const parse = (chunkData: ChunkData, protocolVersion: ProtocolVersion): Chunk => {
+  const minecraftBlocksData = require(join(process.cwd(), 'data', protocolVersion.getVersion().toString(), 'blocks.json'));
 
   const xPos = chunkData.xPos.valueOf();
   const zPos = chunkData.zPos.valueOf();
